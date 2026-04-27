@@ -12,9 +12,27 @@ A Raspberry Pi will act as the central processing unit, scanning BLE signals (RS
 
 A scaled digital map of the environment will be used as a reference. Based on the user's estimated position, the system will detect proximity to walls or obstacles and provide feedback through a vibration mechanism.
 
-Additionally, an accelerometer may be used to detect movement and improve the stability of the position estimation by reducing noise from signal fluctuations.
+---
 
-The main goal of this project is to create a simple and effective system for indoor navigation and collision avoidance, which could be extended to assistive technologies or smart environments.
+## Current Architecture & Data Flow
+
+The system is split into multiple interconnected modules, working together to read physical device proximity, aggregate the data, persist it, and visualize it in real-time.
+
+1. **BLE Device (Cellphone)**: Acts as the target beacon, transmitting BLE signals.
+2. **Helper PI3 (`Helper-Pi/`)**:
+   - Reads the RSSI from the target BLE device.
+   - Sends this RSSI reading via an **MQTT** broker.
+3. **Main PI4 (`Main-Pi/`)**:
+   - Reads the RSSI directly from the BLE device.
+   - Subscribes to the **MQTT** broker to receive the auxiliary RSSI readings from the Helper PI3.
+   - Processes both signals, formats them into a standardized telemetry payload, and sends all readings to the backend via HTTP.
+4. **Local Website Backend (`Backend-node/`)**:
+   - A Node.js/Express server that receives the telemetry from the Main PI4.
+   - **Reads/Writes** these payloads into a **MongoDB** database for historical tracking.
+   - Exposes REST API endpoints (`GET /readings`) to fetch the data.
+5. **User React App (`Front-React/`)**:
+   - A React-based polling dashboard that reads the telemetry from the backend.
+   - Processes the data to eventually display a visual heatmap of the user's real-time location.
 
 ---
 
@@ -24,20 +42,17 @@ The following tools and technologies are proposed for this project:
 
 ### Hardware:
 
-- Raspberry Pi (central processing unit)
-- Multiple Raspberry Pi devices or BLE beacons (used as signal transmitters)
+- **Main PI4** (Central aggregator & processor)
+- **Helper PI3** (Secondary edge scanner)
+- **BLE Device** (Target to track, e.g., a cellphone)
 - Optional wearable device with:
-  - Vibration motor or something that can have a response for the touch or hearing (for feedback)
-  - Accelerometer and/or giroscope (for motion detection)
+  - Vibration motor or something for touch/hearing feedback
+  - Accelerometer and/or gyroscope (for motion detection)
 
-### Software:
+### Software & Stack:
 
-- Python (main programming language)
-- BLE libraries (`bluepy`, `bleak`, or similar)
-- Data processing and signal analysis (RSSI handling)
-- Simple mapping system (grid-based or image-based)
-
-### Other:
-
-- Scaled map of the room (digital representation)
-- Calibration setup for RSSI measurement
+- **Python**: Runs on the Raspberry Pis (`bluepy`/`bleak` for BLE, `paho-mqtt` for messaging).
+- **MQTT**: Lightweight messaging protocol for Pi-to-Pi communication.
+- **Node.js & Express**: Backend API server.
+- **MongoDB**: NoSQL database for telemetry persistence.
+- **React & TypeScript**: Frontend web application for data visualization (`Vite`).
