@@ -1,9 +1,11 @@
 import express from "express";
+import cors from "cors";
 import { getDatabaseName, getMongoClient } from "./mongodb";
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+app.use(cors());
 app.use(express.json());
 
 type PiReadingPayload = {
