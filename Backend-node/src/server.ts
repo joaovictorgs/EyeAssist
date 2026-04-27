@@ -61,6 +61,41 @@ app.post("/readings", async (req, res) => {
   }
 });
 
+app.get("/readings", async (req, res) => {
+  try {
+    const client = await getMongoClient();
+    const databaseName = getDatabaseName();
+    const collection = client.db(databaseName).collection("pi_readings");
+
+    let query = {};
+
+    if (req.query.seconds) {
+      const seconds = parseInt(req.query.seconds as string, 10);
+
+      if (!isNaN(seconds)) {
+        const cutoffTime = new Date(Date.now() - seconds * 1000);
+        query = { received_at: { $gte: cutoffTime } };
+      }
+    }
+
+    const readings = await collection
+      .find(query)
+      .sort({ received_at: 1 })
+      .toArray();
+
+    res.json({
+      ok: true,
+      count: readings.length,
+      readings: readings,
+    });
+  } catch (error) {
+    console.error("Failed to fetch Pi readings:", error);
+    const message =
+      error instanceof Error ? error.message : "Unknown MongoDB error";
+    res.status(500).json({ ok: false, error: message });
+  }
+});
+
 app.get("/", (req, res) => {
   res.send("Get route");
 });
