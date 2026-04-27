@@ -2,7 +2,7 @@ import express from "express";
 import { getDatabaseName, getMongoClient } from "./mongodb";
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
@@ -16,20 +16,25 @@ type PiReadingPayload = {
   };
 };
 
-app.post("/readings", async (req, res) => {
-  const body = req.body as Partial<PiReadingPayload>;
+function isValidPayload(body: any): body is PiReadingPayload {
+  return (
+    body &&
+    typeof body.timestamp === "number" &&
+    typeof body.datetime === "string" &&
+    typeof body.device_id === "string" &&
+    body.measurements &&
+    typeof body.measurements.distance_to_satellite === "number" &&
+    typeof body.measurements.distance_to_target === "number"
+  );
+}
 
-  if (
-    typeof body.timestamp !== "number" ||
-    typeof body.datetime !== "string" ||
-    typeof body.device_id !== "string" ||
-    !body.measurements ||
-    typeof body.measurements.distance_to_satellite !== "number" ||
-    typeof body.measurements.distance_to_target !== "number"
-  ) {
+app.post("/readings", async (req, res) => {
+  const body = req.body;
+
+  if (!isValidPayload(body)) {
     res.status(400).json({
       ok: false,
-      error: "Invalid payload",
+      error: "Invalid payload format. Please check required fields.",
     });
     return;
   }
@@ -49,6 +54,7 @@ app.post("/readings", async (req, res) => {
       insertedId: result.insertedId,
     });
   } catch (error) {
+    console.error("Failed to insert Pi reading:", error);
     const message =
       error instanceof Error ? error.message : "Unknown MongoDB error";
     res.status(500).json({ ok: false, error: message });
@@ -85,5 +91,5 @@ app.get("/mongo-health", async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log("server in http://localhost:" + port);
+  console.log(`Server is running on http://localhost:${port}`);
 });
