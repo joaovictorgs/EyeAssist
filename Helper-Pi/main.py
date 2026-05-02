@@ -24,7 +24,7 @@ TOPIC = f"{DEVICE_ID}/Reading"
 # 2. write power on
 # 3. write scan on
 # 4. Find your device name in the list, copy its MAC address (XX:XX:XX:XX:XX:XX), and replace here.
-TARGET_MAC = "76:B6:B7:E9:33:98"
+TARGET_MAC = "78:EB:F5:B7:41:18"
 CALIBRATION_1M_RSSI = -80
 ENVIRONMENT_FACTOR = 2.0 
 SMOOTHING_SAMPLES = 5
@@ -62,8 +62,6 @@ async def main():
         mac = device.address.upper()
         if mac == TARGET_MAC:
             recent_readings.append(advertisement_data.rssi)
-            if len(recent_readings) > SMOOTHING_SAMPLES:
-                recent_readings.pop(0)
 
     scanner = BleakScanner(detection_callback)
     await scanner.start()
@@ -79,7 +77,12 @@ async def main():
                 payload = get_payload(estimated_distance)
                 client.publish(TOPIC, payload)
                 
-                print(f"Published to {TOPIC}: {payload}")
+                print(f"Reading: RSSI Average={avg_rssi:.1f} dBm | Distance={estimated_distance}m")
+                print(f"-> Sending to the topic: '{TOPIC}': {payload}")
+                print("-" * 50)
+                
+    
+                recent_readings.clear()
             else:
                 pass # Waiting for enough samples to calculate average
             
