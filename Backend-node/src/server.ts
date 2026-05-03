@@ -9,24 +9,19 @@ app.use(cors());
 app.use(express.json());
 
 type PiReadingPayload = {
-  timestamp: number;
-  datetime: string;
-  device_id: string;
-  measurements: {
-    distance_to_satellite: number;
-    distance_to_target: number;
-  };
+  timestamp_sync: number;
+  target_mac: string;
+  anchors: Record<string, number>;
+  status: string;
 };
 
 function isValidPayload(body: any): body is PiReadingPayload {
   return (
     body &&
-    typeof body.timestamp === "number" &&
-    typeof body.datetime === "string" &&
-    typeof body.device_id === "string" &&
-    body.measurements &&
-    typeof body.measurements.distance_to_satellite === "number" &&
-    typeof body.measurements.distance_to_target === "number"
+    typeof body.timestamp_sync === "number" &&
+    typeof body.target_mac === "string" &&
+    typeof body.anchors === "object" &&
+    typeof body.status === "string"
   );
 }
 
