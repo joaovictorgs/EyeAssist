@@ -4,6 +4,7 @@ import json
 import time
 import asyncio
 import math
+import requests
 from bleak import BleakScanner
 
 # Configuration
@@ -12,10 +13,10 @@ BROKER_ADDRESS = "localhost"
 BROKER_PORT = 1883
 TOPIC_TO_SUBSCRIBE = "+/Reading"
 
-API_BACKEND_URL = "http://192.168.1.16:3000/api/location" # Change to your PC's IP
+API_BACKEND_URL = "http://192.168.1.16:3000/readings" # Updated to match backend route
 
 # BLE Configuration
-TARGET_MAC = "78:EB:F5:B7:41:18" # Check your target phone's MAC
+TARGET_MAC = "57:06:FA:24:0F:0A" # Check your target phone's MAC
 CALIBRATION_1M_RSSI = -80
 ENVIRONMENT_FACTOR = 2.0
 SMOOTHING_SAMPLES = 5
@@ -97,8 +98,14 @@ def pack_and_send_to_db():
         payload_json = json.dumps(payload_bd, indent=2)
         print("\n--- PREPARING TO SEND TO API (EXPRESS/MONGO) ---")
         print(payload_json)
+                # SEND HTTP POST
         
-        # clear the arrays to reset the loop and wait for fresh values!
+        try:
+            response = requests.post(API_BACKEND_URL, json=payload_bd, timeout=2)
+            print(f"Sent to API. Status Code: {response.status_code}")
+        except Exception as e:
+            print(f"Failed to reach API: {e}")
+                    # clear the arrays to reset the loop and wait for fresh values!
         latest_readings.clear()
         recent_rssi_buffer.clear()
 
