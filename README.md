@@ -16,23 +16,31 @@ A scaled digital map of the environment will be used as a reference. Based on th
 
 ## Current Architecture & Data Flow
 
-The system is split into multiple interconnected modules, working together to read physical device proximity, aggregate the data, persist it, and visualize it in real-time.
+The system is split into multiple interconnected modules, working together to read physical device proximity, aggregate the data, persist it, and visualize it in real-time. By default, the system assumes the two Pi nodes are placed exactly 3.0 meters apart.
 
-1. **BLE Device (Cellphone)**: Acts as the target beacon, transmitting BLE signals.
-2. **Helper PI3 (`Helper-Pi/`)**:
-   - Reads the RSSI from the target BLE device.
-   - Sends this RSSI reading via an **MQTT** broker.
-3. **Main PI4 (`Main-Pi/`)**:
-   - Reads the RSSI directly from the BLE device.
-   - Subscribes to the **MQTT** broker to receive the auxiliary RSSI readings from the Helper PI3.
-   - Processes both signals, formats them into a standardized telemetry payload, and sends all readings to the backend via HTTP.
-4. **Local Website Backend (`Backend-node/`)**:
-   - A Node.js/Express server that receives the telemetry from the Main PI4.
-   - **Reads/Writes** these payloads into a **MongoDB** database for historical tracking.
-   - Exposes REST API endpoints (`GET /readings`) to fetch the data.
-5. **User React App (`Front-React/`)**:
-   - A React-based polling dashboard that reads the telemetry from the backend.
-   - Processes the data to eventually display a visual heatmap of the user's real-time location.
+**Module Overviews (Click for deeper Readmes):**
+- [Helper-Pi (Secondary Scanner)](Helper-Pi/README.md)
+- [Main-Pi (Core Aggregator & Math)](Main-Pi/README.md)
+- [Backend-node (API & Database)](Backend-node/README.md)
+- [Front-React (Dashboard)](Front-React/README.md)
+
+1. **BLE Device (Target Tracker)**: Acts as the target beacon, transmitting BLE signals continuously.
+2. **[Helper PI3 (`Helper-Pi/`)](Helper-Pi/README.md)**:
+   - Reads the raw RSSI from the target BLE device.
+   - Applies a Low-Pass Filter (Simple Moving Average) to stabilize the reading.
+   - Computes distance and sends this telemetry via an **MQTT** broker.
+3. **[Main PI4 (`Main-Pi/`)](Main-Pi/README.md)**:
+   - Reads the RSSI directly from the BLE device and smooths the signal.
+   - Subscribes to the **MQTT** broker to receive the auxiliary distance readings from the Helper PI3.
+   - Calculates the target's physical position along the 3-meter axis using **1D Weighted Least Squares (WLS)**, leveraging inverse-square distance weights.
+   - Formats the results into a standardized payload and sends all readings to the backend via HTTP.
+4. **[Local Website Backend (`Backend-node/`)](Backend-node/README.md)**:
+   - A Node.js/Express (TypeScript) server that receives the telemetry from the Main PI4.
+   - Validates data and **Reads/Writes** payloads into a **MongoDB** database for historical tracking.
+   - Exposes REST API endpoints (`GET /readings`) for the frontend.
+5. **[User React App (`Front-React/`)](Front-React/README.md)**:
+   - A React-based polling dashboard that fetches the latest telemetry.
+   - Displays a clean visual representation of the target device shifting securely between 0.0m and 3.0m without visual clutter or noise.
 
 ---
 
