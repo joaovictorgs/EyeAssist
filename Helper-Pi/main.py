@@ -33,14 +33,12 @@ def calculate_distance(rssi):
     distance = 10 ** ((CALIBRATION_1M_RSSI - rssi) / (10 * ENVIRONMENT_FACTOR))
     return round(distance, 2)
 
-def get_payload(dist_target):
+def get_payload(dist_target, rssi_raw):
     return json.dumps({
-        "timestamp": time.time(),
-        "datetime": datetime.utcnow().isoformat() + "Z",
-        "device_id": DEVICE_ID,
-        "measurements": {
-            "distance_to_target": dist_target
-        }
+        "name": DEVICE_ID,
+        "distance": dist_target,
+        "rssi_raw": rssi_raw,
+        "timestamp": time.time()
     })
 
 async def main():
@@ -74,7 +72,7 @@ async def main():
                 avg_rssi = sum(recent_readings) / len(recent_readings)
                 estimated_distance = calculate_distance(avg_rssi)
                 
-                payload = get_payload(estimated_distance)
+                payload = get_payload(estimated_distance, avg_rssi)
                 client.publish(TOPIC, payload)
                 
                 print(f"Reading: RSSI Average={avg_rssi:.1f} dBm | Distance={estimated_distance}m")
