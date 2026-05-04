@@ -7,22 +7,46 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+type AnchorReading = {
+  name: string;
+  distance: number;
+  rssi: number;
+};
 
 type PiReadingPayload = {
   timestamp_sync: number;
   target_mac: string;
-  anchors: Record<string, number>;
+  anchors: AnchorReading[];
+  estimated_position_ratio: number;
+  estimated_position_meters: number;
   status: string;
 };
 
 function isValidPayload(body: any): body is PiReadingPayload {
-  return (
-    body &&
-    typeof body.timestamp_sync === "number" &&
-    typeof body.target_mac === "string" &&
-    typeof body.anchors === "object" &&
-    typeof body.status === "string"
-  );
+  if (
+    !body ||
+    typeof body.timestamp_sync !== "number" ||
+    typeof body.target_mac !== "string" ||
+    typeof body.estimated_position_ratio !== "number" ||
+    typeof body.estimated_position_meters !== "number" ||
+    typeof body.status !== "string" ||
+    !Array.isArray(body.anchors)
+  ) {
+    return false;
+  }
+
+  // Validate each anchor in the array
+  for (const anchor of body.anchors) {
+    if (
+      typeof anchor.name !== "string" ||
+      typeof anchor.distance !== "number" ||
+      typeof anchor.rssi !== "number"
+    ) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 app.post("/readings", async (req, res) => {
