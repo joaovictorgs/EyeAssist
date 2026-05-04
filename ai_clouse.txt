@@ -1,0 +1,4 @@
+the formulas where done using chat gpt on this chat: https://chatgpt.com/share/69f8bf6d-75b8-8332-8bf9-0254a9259138
+the code was translated to english and formated using github copilot the functions and logics where made by the owner of this repository
+also any questions about the code itself can be done via email or direct message
+github copilot was also used as an searcher for bugs, testing, and refactor functions that where bugged or weren't working properly
